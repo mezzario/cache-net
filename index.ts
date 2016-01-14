@@ -1,4 +1,4 @@
-import DateTime from "./src/cache";
+import Cache from "./src/cache";
 
-export default DateTime;
+export default Cache;
 export * from "./src/cache";
