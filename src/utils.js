@@ -1,3 +1,4 @@
+/// <reference path="../typings/tsd.d.ts" />
 "use strict";
 function isArray(value) {
     return Object.prototype.toString.call(value) === "[object Array]";
