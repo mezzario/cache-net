@@ -1,6 +1,6 @@
 {
   "name": "cache-net",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Lightweight cache library inspired by .NET",
   "main": "index.js",
   "scripts": {

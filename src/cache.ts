@@ -81,17 +81,17 @@ export default class Cache
 
         this._items.push(item);
 
-        let dependencyChanged = () => {
+        let dependencyTriggered = () => {
             for (let i = 0; i < dependencies.length; i++)
-                dependencies[i].triggered.remove(dependencyChanged);
+                dependencies[i].triggered.remove(dependencyTriggered);
 
-            this.remove(keyOrData, "DependencyChanged");
+            this.remove(keyOrData, "DependencyTriggered");
         };
 
         for (let i = 0; i < dependencies.length; i++) {
             let dependency = dependencies[i];
             dependency.attach(this);
-            dependency.triggered.addOnce(dependencyChanged);
+            dependency.triggered.addOnce(dependencyTriggered);
         }
 
         this.expirationCheck();

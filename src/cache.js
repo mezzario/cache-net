@@ -44,15 +44,15 @@ var Cache = (function () {
         if (this.maxSize != null && this.maxSize === this._items.length)
             this.removeInternal(this._items[0], "Underused", 0);
         this._items.push(item);
-        var dependencyChanged = function () {
+        var dependencyTriggered = function () {
             for (var i = 0; i < dependencies.length; i++)
-                dependencies[i].triggered.remove(dependencyChanged);
-            _this.remove(keyOrData, "DependencyChanged");
+                dependencies[i].triggered.remove(dependencyTriggered);
+            _this.remove(keyOrData, "DependencyTriggered");
         };
         for (var i = 0; i < dependencies.length; i++) {
             var dependency = dependencies[i];
             dependency.attach(this);
-            dependency.triggered.addOnce(dependencyChanged);
+            dependency.triggered.addOnce(dependencyTriggered);
         }
         this.expirationCheck();
     };
