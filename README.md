@@ -1,4 +1,6 @@
 # cache-net
+A tiny JavaScript cache library inspired by .NET.
+
 ### Features
 * Size limit: delete old items if full.
 * Expiration: absolute or sliding.
@@ -30,3 +32,6 @@ value = cache.get(key); // 3
 
 cache.remove("two"); // will also remove dependent item referenced by "key"
 ```
+
+### In browser
+Please use [webpack](https://github.com/webpack/webpack) or [browserify](https://github.com/substack/node-browserify) to include in web applications.
