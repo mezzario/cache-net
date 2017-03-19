@@ -1,8 +1,8 @@
 {
   "name": "cache-net",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Lightweight cache library inspired by .NET",
-  "main": "index.js",
+  "main": "src/index.js",
   "scripts": {
     "test": "mocha"
   },
@@ -31,10 +31,11 @@
   },
   "homepage": "https://github.com/mezzario/cache-net#readme",
   "dependencies": {
-    "json-stable-stringify": "^1.0.0",
+    "json-stable-stringify": "^1.0.1",
     "signals": "^1.0.0"
   },
   "devDependencies": {
+    "eslint": "^3.18.0",
     "expect.js": "^0.3.1"
   }
 }

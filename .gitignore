@@ -1,7 +1,2 @@
-.vs
-bin
-obj
-node_modules
-.DS_Store
-.ntvs_analysis.dat
+node_modules/
 npm-debug.log
