@@ -1,10 +1,9 @@
 var expect = require("expect.js")
-var Cache = require("../src/Cache")
-var CacheDependency = require("../src/CacheDependency")
+var CacheNet = require("../src")
 
 describe("Cache", function() {
     it("should remove extra items", function() {
-        var cache = new Cache(3)
+        var cache = new CacheNet.Cache(3)
         cache.insert("one", 1)
         cache.insert("two", 2)
         cache.insert("three", 3)
@@ -19,17 +18,17 @@ describe("Cache", function() {
     })
 
     it("should remove items on dependency", function() {
-        var cache = new Cache()
+        var cache = new CacheNet.Cache()
         cache.insert("one", 1)
-        cache.insert("two", 2, { dependencies: new CacheDependency("one") })
+        cache.insert("two", 2, { dependencies: new CacheNet.CacheDependency("one") })
         cache.remove("one")
 
         expect(cache.getCount()).to.be(0)
 
         cache.insert("one", 1)
-        var dep = new CacheDependency("one")
+        var dep = new CacheNet.CacheDependency("one")
         cache.insert("two", 2, { dependencies: dep })
-        cache.insert("three", 3, { dependencies: new CacheDependency(undefined, dep) })
+        cache.insert("three", 3, { dependencies: new CacheNet.CacheDependency(undefined, dep) })
         cache.remove("one")
 
         expect(cache.getCount()).to.be(0)

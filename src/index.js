@@ -1,7 +1,4 @@
-var Cache = require("../src/Cache")
-var CacheDependency = require("../src/CacheDependency")
-
-exports = {
-    Cache: Cache,
-    CacheDependency: CacheDependency
+module.exports = {
+    Cache: require("../src/Cache"),
+    CacheDependency: require("../src/CacheDependency")
 }
