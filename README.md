@@ -20,17 +20,17 @@ or
 
 ### Example
 ```javascript
-var CacheNet = require("cache-net")
+import { Cache, CacheDependency } from "cache-net"
 
-var cache = new CacheNet.Cache(3) // max size is three items
-var key = { id: "three", hash: 28374823 } // can be any plain object
+const cache = new Cache(3) // max size is three items
+const key = { id: "three", hello: "world" } // can be any plain object
 
-cache.insert("one", 1)
-cache.insert("two", { a: 1, b: { c: "hi" }})
-cache.insert(key, 3, { dependencies: new CacheNet.CacheDependency("two") })
-cache.insert("four", { slidingExpirationMsec: 5000 }) // will be removed in 5 sec if not accessed
+cache.set("one", 1)
+cache.set("two", { a: 1, b: { c: "hi" }})
+cache.set(key, 3, { dependencies: new CacheDependency("two") })
+cache.set("four", { slidingExpirationMsec: 5000 }) // will be removed in 5 sec if not accessed
 
-var value = cache.get("one") // undefined (deleted because of size limit)
+let value = cache.get("one") // undefined (deleted because of size limit)
 value = cache.get("two") // { a: 1, b: { c: "hi" }}
 value = cache.get(key) // 3
 
