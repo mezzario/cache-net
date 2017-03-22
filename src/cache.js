@@ -1,246 +1,199 @@
-var stringify = require("json-stable-stringify")
-var Signal = require("signals").Signal
-var Utils = require("./Utils")
+import * as RedBlackTree from "redblack"
+import { Signal } from "signals"
+import CacheDependency from "./CacheDependency"
+import * as Utils from "./Utils"
 
-function Cache(maxSize) {
-    var me = this
+export default class Cache {
+    constructor(maxSize) {
+        this.maxSize = maxSize
+        this.itemRemoved = new Signal()
 
-    if (maxSize != null && maxSize <= 0)
-        throw new Error("Cache.constructor: 'maxSize' shoud be greater than 0")
+        this._map = Object.create(null)
+        this._tree = RedBlackTree.tree()
+        this._size = 0
+        this._lastOrder = 1
+    }
 
-    me._items = []
-    me.maxSize = maxSize
-    me.itemRemoved = new Signal()
+    get maxSize() {
+        return this._maxSize
+    }
 
-    me.insert = function(keyOrData, value, options) {
+    set maxSize(maxSize) {
+        if (maxSize != null && maxSize <= 0)
+            throw new Error("'maxSize' shoud be greater than 0")
+
+        this._maxSize = maxSize
+
+        while (this._size > maxSize)
+            this._removeItem(this._getOldestItem(), "Underused")
+    }
+
+    get size() {
+        return this._size
+    }
+
+    set(key, value, options) {
         options = options || {}
 
-        var dependencies = options.dependencies
-            ? (Utils.isArray(options.dependencies)
+        if (value === void 0)
+            throw new Error("'value' cannot be undefined")
+
+        const deps = options.dependencies
+            ? (Array.isArray(options.dependencies)
                 ? options.dependencies
                 : [options.dependencies])
             : []
 
-        var absoluteExpiration = Utils.isFunction(options.absoluteExpiration)
+        for (let i = 0; i < deps.length; i++)
+            if (!(deps[i] instanceof CacheDependency))
+                throw new Error("'dependencies' should be one or more 'CacheDependency' instances")
+
+        const absoluteExpiration = typeof options.absoluteExpiration === "function"
             ? options.absoluteExpiration.call(options)
             : options.absoluteExpiration
 
         if (absoluteExpiration != null && !(absoluteExpiration instanceof Date))
-            throw new Error("Cache.insert: 'absoluteExpiration' should be of type DateTime or null")
+            throw new Error("'absoluteExpiration' is not a Date")
 
-        if (value == null)
-            throw new Error("Cache.insert: 'value' cannot be null or undefined")
+        if (options.slidingExpirationMsec != null) {
+            if (absoluteExpiration != null)
+                throw new Error("'slidingExpirationMsec' cannot be set if 'absoluteExpiration' is set")
 
-        if (options.slidingExpirationMsec != null
-            && (options.slidingExpirationMsec < 0
-                || options.slidingExpirationMsec > 31536000000))
-        {
-            throw new Error("Cache.insert: allowed range for 'slidingExpirationMsec' is [0..31536000000] (up to year)")
+            if ((options.slidingExpirationMsec < 0 || options.slidingExpirationMsec > 31536000000))
+                throw new Error("allowed range for 'slidingExpirationMsec' is [0..31536000000] (up to one year)")
         }
 
-        me.remove(keyOrData, "Removed")
+        const keyStruct = Utils.getKeyStruct(key)
+        const prevItem = this._map[keyStruct.keyStr]
 
-        var keyStruct = _getKeyStruct(keyOrData)
+        if (prevItem)
+            this._removeItem(prevItem, "Overwritten")
 
-        var item = {
-            key: keyStruct.key,
-            data: keyStruct.data,
-            value: value,
+        const item = {
+            order: this._lastOrder++,
+            key,
+            keyStr: keyStruct.keyStr,
+            keyData: keyStruct.keyData,
+            value,
+            absoluteExpiration,
             slidingExpirationMsec: options.slidingExpirationMsec,
-            removeCallback: options.removeCallback,
+            removeCallback: options.removeCallback
         }
 
-        _updateExpiration(item, absoluteExpiration)
+        this._updateExpiration(item)
 
-        if (me.maxSize != null && me.maxSize === me._items.length)
-            _removeInternal(me._items[0], "Underused", 0)
+        if (this._maxSize != null && this._maxSize === this.size)
+            this._removeItem(this._getOldestItem(), "Underused")
 
-        me._items.push(item)
+        this._map[item.keyStr] = item
+        this._tree.insert(item.order, item)
 
-        var dependencyTriggered = function() {
-            for (var i = 0; i < dependencies.length; i++)
-                dependencies[i].triggered.remove(dependencyTriggered)
+        if (!prevItem)
+            this._size++
 
-            me.remove(keyOrData, "DependencyTriggered")
+        const depTriggered = () => {
+            for (let i = 0; i < deps.length; i++)
+                deps[i].triggered.remove(depTriggered)
+
+            this.remove(key, "DependencyTriggered")
         }
 
-        for (var i = 0; i < dependencies.length; i++) {
-            var dependency = dependencies[i]
-            dependency.attach(me)
-            dependency.triggered.addOnce(dependencyTriggered)
-        }
+        for (let i = 0; i < deps.length; i++) {
+            const dependency = deps[i]
 
-        _expirationCheck()
+            dependency._attach(this)
+            dependency.triggered.addOnce(depTriggered)
+        }
     }
 
-    me.add = function(keyOrData, value, options) {
-        var keyStruct = _getKeyStruct(keyOrData)
-        var item = _getItem(keyStruct.key)
+    get(key) {
+        const keyStruct = Utils.getKeyStruct(key)
+        const item = this._map[keyStruct.keyStr]
 
-        if (item != null)
-            return item.value
-        else
-            me.insert(keyOrData, value, options)
-    }
-
-    me.get = function(keyOrData, calcValue, addOptions) {
-        var keyStruct = _getKeyStruct(keyOrData)
-        var item = _getItem(keyStruct.key)
-
-        if (item != null) {
-            _updateExpiration(item)
-            _expirationCheck()
-
+        if (item !== void 0) {
+            this._updateExpiration(item)
             return item.value
         }
-        else if (calcValue) {
-            var value = calcValue()
-            me.insert(keyOrData, value, addOptions)
-            return value
+    }
+
+    has(key) {
+        const keyStruct = Utils.getKeyStruct(key)
+        return this._map[keyStruct.keyStr] !== void 0
+    }
+
+    remove(key, reason) {
+        const keys = Array.isArray(key) ? key : [key]
+
+        for (let i = 0; i < keys.length; i++) {
+            const keyStruct = Utils.getKeyStruct(keys[i])
+            const item = this._map[keyStruct.keyStr]
+
+            this._removeItem(item, reason)
         }
     }
 
-    me.exists = function(keyOrDataOrArray) {
-        var found = false
+    clear(testFn) {
+        let removedCount = 0
 
-        _enumKeyStructs(keyOrDataOrArray, function(keyStruct) {
-            if (!(found = (_getItem(keyStruct.key) != null)))
-                return false
-        })
+        for (const keyStr in this._map) {
+            const item = this._map[keyStr]
 
-        return found
-    }
-
-    me.remove = function(keyOrDataOrArray, reason) {
-        _enumKeyStructs(keyOrDataOrArray, function(keyStruct) {
-            var item = _getItem(keyStruct.key)
-
-            if (item)
-                _removeInternal(item, reason)
-
-            return true
-        })
-    }
-
-    me.clear = function(test) {
-        var removedCount = me._items.length
-
-        for (var i = me._items.length - 1; i >= 0; i--) {
-            var item = me._items[i]
-
-            if (!test || test(item.key, item.value, item.data) === true)
-                _removeInternal(item, "Removed", i)
+            if (!testFn || testFn(item.key, item.value) === true) {
+                this._removeItem(item)
+                removedCount++
+            }
         }
 
         return removedCount
     }
 
-    me.getCount = function() {
-        return this._items.length
-    }
+    enumerate(fn) {
+        for (const keyStr in this._map) {
+            const item = this._map[keyStr]
 
-    me.enumerate = function(fn) {
-        for (var i = me._items.length - 1; i >= 0; i--) {
-            var item = me._items[i]
-
-            if (fn.call(me, item.key, item.value, item.data) === false)
+            if (fn.call(this, item.key, item.value) === false)
                 break
         }
     }
 
-    function _getKeyStruct(keyOrData) {
-        var keyStruct = {
-            key: typeof keyOrData !== "string" ? stringify(keyOrData) : keyOrData,
-            data: typeof keyOrData !== "string" ? keyOrData : null
-        }
+    _getOldestItem() {
+        let node = this._tree.root
 
-        if (keyStruct.key == null)
-            throw new Error("Cache.getKeyStruct: empty key")
+        while (node.left !== null)
+            node = node.left
 
-        return keyStruct
+        return node.value
     }
 
-    function _enumKeyStructs(keyOrDataOrArray, fn) {
-        if (Utils.isArray(keyOrDataOrArray)) {
-            var arr = keyOrDataOrArray
-            if (!arr.length)
-                throw new Error("Cache.enumKeyStructs: empty keys array")
-
-            for (var i = 0; i < arr.length; i++)
-                if (fn.call(me, _getKeyStruct(arr[i])) === false)
-                    return
-        }
-        else
-            fn.call(me, _getKeyStruct(keyOrDataOrArray))
-    }
-
-    function _removeInternal(item, reason, index) {
+    _removeItem(item, reason) {
         reason = reason || "Removed"
 
-        if (Utils.isFunction(item.removeCallback))
-            item.removeCallback.apply(me, [item.key, item.value, item.data, reason])
+        if (typeof item.removeCallback === "function")
+            item.removeCallback.apply(this, [item.key, item.value, reason])
 
-        if (index == null)
-            for (var i = 0; i < me._items.length; i++)
-                if (me._items[i] === item) {
-                    index = i
-                    break
-                }
+        delete this._map[item.keyStr]
+        this._tree.delete(item.order)
+        this._size--
 
-        me._items.splice(index, 1)
-        me.itemRemoved.dispatch(item.key, item.value, item.data, reason)
+        this.itemRemoved.dispatch(item.key, item.value, reason)
     }
 
-    function _expirationCheck() {
-        if (me._expCheckTimer != null) {
-            clearInterval(me._expCheckTimer)
-            me._expCheckTimer = null
+    _updateExpiration(item) {
+        let expires
+
+        if (item.expTimer != null) {
+            clearTimeout(item.expTimer)
+            item.expTimer = null
         }
 
-        var nowTicks = new Date().getTime()
-        var nextItem = null
-        var i = 0
-
-        while (i < me._items.length) {
-            var item = me._items[i]
-            var removed = false
-
-            if (item.expires) {
-                var ticks = item.expires.getTime()
-
-                if (nowTicks >= ticks) {
-                    _removeInternal(item, "Expired", i)
-                    removed = true
-                }
-                else if (!nextItem || ticks < nextItem.expires.getTime())
-                    nextItem = item
-            }
-
-            if (!removed)
-                i++
-        }
-
-        if (nextItem)
-            me._expCheckTimer = setTimeout(_expirationCheck.bind(me), nextItem.expires.getTime() - nowTicks + 499)
-    }
-
-    function _updateExpiration(item, absoluteExpiration) {
-        if (absoluteExpiration != null)
-            item.expires = absoluteExpiration
+        if (item.absoluteExpiration != null)
+            expires = item.absoluteExpiration
         else if (item.slidingExpirationMsec != null)
-            item.expires = new Date(new Date().getTime() + item.slidingExpirationMsec)
-    }
+            expires = new Date(new Date().getTime() + item.slidingExpirationMsec)
 
-    function _getItem(keyOrData) {
-        var keyStruct = _getKeyStruct(keyOrData)
-
-        for (var i = 0; i < me._items.length; i++) {
-            var item = me._items[i]
-
-            if (item.key === keyStruct.key)
-                return item
+        if (expires) {
+            const { keyStr } = item
+            item.expTimer = setTimeout(this.remove(keyStr, "Expired"), expires.getTime() - new Date().getTime())
         }
     }
 }
-
-module.exports = Cache

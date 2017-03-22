@@ -1,19 +1,18 @@
-function isArray(value) {
-    return Object.prototype.toString.call(value) === "[object Array]"
-}
+import stringify from "json-stable-stringify"
+import md5 from "blueimp-md5"
 
-function isObject(value) {
-    var type = typeof value
-    return !!value && (type == "object" || type == "function")
-}
+export function getKeyStruct(key) {
+    if (key == null)
+        throw new Error("'key' cannot be null or undefined")
 
-function isFunction(value) {
-    var tag = isObject(value) ? Object.toString.call(value) : ""
-    return tag == "[object Function]" || tag == "[object GeneratorFunction]"
-}
+    if (typeof key == "function" || typeof key == "symbol")
+        throw new Error(`Usupported key type: '${typeof key}'`)
 
-module.exports = {
-    isArray: isArray,
-    isObject: isObject,
-    isFunction: isFunction
+    const keyStruct = {
+        key,
+        keyStr: typeof key === "object" ? md5(stringify(key)) : String(key),
+        keyData: typeof key === "object" ? key : null
+    }
+
+    return keyStruct
 }

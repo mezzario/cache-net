@@ -1,61 +1,82 @@
-var Signal = require("signals").Signal
-var Utils = require("./Utils")
+import { Signal } from "signals"
+import * as Utils from "./Utils"
 
-function CacheDependency(cachekeys, dependencies) {
-    var me = this
+export default class CacheDependency {
+    constructor(keys, dependencies) {
+        this._map = Object.create(null);
 
-    me._cachekeys = cachekeys ? (Utils.isArray(cachekeys) ? cachekeys : [cachekeys]) : []
-    me._dependencies = dependencies ? (Utils.isArray(dependencies) ? dependencies : [dependencies]) : []
+        (keys ? (Array.isArray(keys) ? keys : [keys]) : [])
+            .forEach(key => {
+                const keyStruct = Utils.getKeyStruct(key)
+                this._map[keyStruct.keyStr] = key
+            })
 
-    me.triggered = new Signal()
-    me._isTriggered = false
+        this._deps = dependencies ? (Array.isArray(dependencies) ? dependencies : [dependencies]) : []
 
-    me.attach = function(cache) {
-        if (me._cache)
-            throw new Error("CacheDependency.attach: dependency already attached")
+        for (let i = 0; i < this._deps.length; i++)
+            if (!(this._deps[i] instanceof CacheDependency))
+                throw new Error("'dependencies' should be one or more 'CacheDependency' instances")
 
-        me._cache = cache
-
-        if (me._cachekeys.length)
-            cache.itemRemoved.add(_handleRemovedItem, me)
-
-        for (var i = 0; i < me._dependencies.length; i++)
-            me._dependencies[i].triggered.addOnce(_setTriggered, me)
+        this.triggered = new Signal()
+        this._isTriggered = false
     }
 
-    me.detach = function() {
-        if (me._cachekeys.length)
-            me._cache.itemRemoved.remove(_handleRemovedItem, me)
-
-        for (var i = 0; i < me._dependencies.length; i++)
-            me._dependencies[i].triggered.remove(_setTriggered, me)
-
-        me._cache = null
-    }
-
-    me.isTriggered = function() {
+    isTriggered() {
         return this._isTriggered
     }
 
-    me.getLastModified = function() {
+    getLastModified() {
         return this._triggeredDate
     }
 
-    function _handleRemovedItem(key, value, data, reason) {
-        for (var i = 0; i < me._cachekeys.length; i++)
-            if (me._cachekeys[i] === key) {
-                _setTriggered()
-                break
-            }
+    _hasKeys() {
+        let has = false
+
+        for (const _ in this._map) {
+            has = true
+            break
+        }
+
+        return has
     }
 
-    function _setTriggered() {
-        me.detach()
+    _attach(cache) {
+        if (this._cache)
+            throw new Error("dependency already attached")
 
-        me._isTriggered = true
-        me._triggeredDate = new Date()
+        this._cache = cache
 
-        me.triggered.dispatch()
+        if (this._hasKeys())
+            cache.itemRemoved.add(this._handleRemovedItem, this)
+
+        for (var i = 0; i < this._deps.length; i++)
+            this._deps[i].triggered.addOnce(this._setTriggered, this)
+    }
+
+    _detach() {
+        if (this._hasKeys())
+            this._cache.itemRemoved.remove(this._handleRemovedItem, this)
+
+        for (var i = 0; i < this._deps.length; i++)
+            this._deps[i].triggered.remove(this._setTriggered, this)
+
+        this._cache = null
+    }
+
+    _handleRemovedItem(key/*, value, reason*/) {
+        const keyStruct = Utils.getKeyStruct(key)
+
+        if (this._map[keyStruct.keyStr] !== void 0)
+            this._setTriggered()
+    }
+
+    _setTriggered() {
+        this._detach()
+
+        this._isTriggered = true
+        this._triggeredDate = new Date()
+
+        this.triggered.dispatch()
     }
 }
 
