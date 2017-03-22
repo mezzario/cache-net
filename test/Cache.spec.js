@@ -34,7 +34,21 @@ describe("Cache", function() {
         expect(cache.size).toBe(0)
     })
 
-    it("should enumerateand support compound keys", function() {
+    it("should remove manually", function() {
+        const cache = new Cache()
+        cache.set("one", 1)
+        cache.set("two", 2)
+        cache.set("three", 3)
+
+        cache.remove("two")
+        cache.remove("unknown")
+
+        expect(cache.size).toBe(2)
+        expect(cache.has("one")).toBeTruthy()
+        expect(cache.has("three")).toBeTruthy()
+    })
+
+    it("should enumerate and support compound keys", function() {
         const cache = new Cache()
         cache.set("three", 3)
         cache.set("one", 1)
@@ -80,7 +94,7 @@ describe("Cache", function() {
         expect(cache.has({ four: true })).toBeTruthy()
     })
 
-    it("should apply sliding expiration to items", function() {
+    it("should update sliding expiration on items", function() {
         const cache = new Cache()
         cache.set("one", 1, { slidingExpirationMsec: 1000 })
         cache.set("two", 2, { slidingExpirationMsec: 1250 })
@@ -99,7 +113,7 @@ describe("Cache", function() {
             })
     })
 
-    it("should apply absolute expiration to items", function() {
+    it("should remove items with absolute expiration", function() {
         const cache = new Cache()
         cache.set("one", 1, { absoluteExpiration: new Date(new Date().getTime() + 500) })
         cache.set("two", 2, { absoluteExpiration: new Date(new Date().getTime() + 1000) })
@@ -110,6 +124,7 @@ describe("Cache", function() {
                 expect(cache.has("two")).toBeTruthy()
 
                 cache.get("one")
+                cache.get("unknown")
             })
             .then(delayPromise(500))
             .then(() => {

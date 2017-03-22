@@ -24,8 +24,9 @@ export default class Cache {
 
         this._maxSize = maxSize
 
-        while (this._size > maxSize)
-            this._removeItem(this._getOldestItem(), "Underused")
+        if (maxSize != null)
+            while (this._size > maxSize)
+                this._removeItem(this._getOldestItem(), "Underused")
     }
 
     get size() {
@@ -128,7 +129,8 @@ export default class Cache {
             const keyStruct = Utils.getKeyStruct(keys[i])
             const item = this._map[keyStruct.keyStr]
 
-            this._removeItem(item, reason)
+            if (item)
+                this._removeItem(item, reason)
         }
     }
 

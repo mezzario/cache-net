@@ -15,7 +15,7 @@
     "rules": {
         "quotes": ["error", "double", { "avoidEscape": true, "allowTemplateLiterals": true }],
         "indent": ["error", 4, { "SwitchCase": 1 }],
-        "semi": ["warn", "never"],
+        "semi": ["error", "never"],
         "no-console": "warn",
         "no-unused-vars": ["warn", { "varsIgnorePattern": "__" }]
     }
