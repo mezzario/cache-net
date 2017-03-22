@@ -193,7 +193,7 @@ export default class Cache {
 
         if (expires) {
             const { keyStr } = item
-            item.expTimer = setTimeout(this.remove(keyStr, "Expired"), expires.getTime() - new Date().getTime())
+            item.expTimer = setTimeout(this.remove.bind(this, keyStr, "Expired"), expires.getTime() - new Date().getTime())
         }
     }
 }

@@ -32,7 +32,7 @@ export default class CacheDependency {
     _hasKeys() {
         let has = false
 
-        for (const _ in this._map) {
+        for (const __ in this._map) {
             has = true
             break
         }

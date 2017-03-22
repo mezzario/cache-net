@@ -79,4 +79,46 @@ describe("Cache", function() {
         expect(cache.has("three")).toBeTruthy()
         expect(cache.has({ four: true })).toBeTruthy()
     })
+
+    it("should apply sliding expiration to items", function() {
+        const cache = new Cache()
+        cache.set("one", 1, { slidingExpirationMsec: 1000 })
+        cache.set("two", 2, { slidingExpirationMsec: 1250 })
+
+        return delayPromise(500)()
+            .then(() => {
+                expect(cache.has("one")).toBeTruthy()
+                expect(cache.has("two")).toBeTruthy()
+
+                cache.get("two") // trigger sliding expiration prolongation
+            })
+            .then(delayPromise(1000))
+            .then(() => {
+                expect(!cache.has("one")).toBeTruthy()
+                expect(cache.has("two")).toBeTruthy()
+            })
+    })
+
+    it("should apply absolute expiration to items", function() {
+        const cache = new Cache()
+        cache.set("one", 1, { absoluteExpiration: new Date(new Date().getTime() + 500) })
+        cache.set("two", 2, { absoluteExpiration: new Date(new Date().getTime() + 1000) })
+
+        return delayPromise(250)()
+            .then(() => {
+                expect(cache.has("one")).toBeTruthy()
+                expect(cache.has("two")).toBeTruthy()
+
+                cache.get("one")
+            })
+            .then(delayPromise(500))
+            .then(() => {
+                expect(!cache.has("one")).toBeTruthy()
+                expect(cache.has("two")).toBeTruthy()
+            })
+    })
 })
+
+function delayPromise(duration) {
+    return (...args) => new Promise(resolve => { setTimeout(() => { resolve(...args) }, duration) })
+}
