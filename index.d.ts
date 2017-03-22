@@ -1,3 +1,5 @@
+import { Signal } from "signals"
+
 export interface CacheOptions {
     dependencies?: CacheDependency | CacheDependency[]
     slidingExpirationMsec?: number
@@ -5,15 +7,12 @@ export interface CacheOptions {
     removeCallback?: (key: string, value, reason: string) => any
 }
 
-export class Cache {
+export declare class Cache {
     maxSize: number
+    size: number
     itemRemoved: Signal
 
     constructor(maxSize: number)
-
-    get maxSize(): number
-    set maxSize(maxSize: number)
-    get size(): number
 
     set(key, value, options?: CacheOptions): void
     get(key)
@@ -23,7 +22,7 @@ export class Cache {
     enumerate(fn: (key, data) => boolean): void
 }
 
-export class CacheDependency {
+export declare class CacheDependency {
     triggered: Signal
 
     constructor(keys: any | any[], dependencies: CacheDependency | CacheDependency[])
