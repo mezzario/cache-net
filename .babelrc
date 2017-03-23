@@ -2,10 +2,16 @@
     "presets": [
         ["es2015", { "modules": false }]
     ],
+    "plugins": [
+        "transform-class-properties"
+    ],
     "env": {
         "commonjs": {
+            "presets": [
+                ["es2015", { "modules": "commonjs" }]
+            ],
             "plugins": [
-                ["transform-es2015-modules-commonjs", { "loose": true }]
+                "transform-class-properties"
             ]
         }
     }

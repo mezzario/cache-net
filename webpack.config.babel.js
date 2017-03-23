@@ -27,7 +27,7 @@ export default {
     plugins: [
         new Webpack.optimize.OccurrenceOrderPlugin(),
         new Webpack.DefinePlugin({
-            "process.env.NODE_ENV": JSON.stringify(NODE_ENV),
+            "process.env.NODE_ENV": JSON.stringify(NODE_ENV)
         }),
         ...(NODE_ENV === "production"
             ? [new Webpack.optimize.UglifyJsPlugin({
