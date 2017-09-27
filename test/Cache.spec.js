@@ -1,5 +1,5 @@
 import expect from "expect"
-import {Cache, CacheDependency} from "../src"
+import Cache, {CacheDependency} from "../src"
 import {describe, it} from "mocha"
 
 describe("Cache", function() {

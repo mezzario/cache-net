@@ -20,7 +20,7 @@ or
 
 ### Example
 ```javascript
-import {Cache, CacheDependency} from "cache-net"
+import Cache, {CacheDependency} from "cache-net"
 
 const cache = new Cache(3) // max size is three items
 const key = {id: "three", hello: "world"} // can be any plain object
