@@ -1,18 +1,18 @@
 {
-    "presets": [
-        ["es2015", { "modules": false }]
-    ],
-    "plugins": [
+  "presets": [
+    ["es2015", { "modules": false }]
+  ],
+  "plugins": [
+    "transform-class-properties"
+  ],
+  "env": {
+    "commonjs": {
+      "presets": [
+        ["es2015", { "modules": "commonjs" }]
+      ],
+      "plugins": [
         "transform-class-properties"
-    ],
-    "env": {
-        "commonjs": {
-            "presets": [
-                ["es2015", { "modules": "commonjs" }]
-            ],
-            "plugins": [
-                "transform-class-properties"
-            ]
-        }
+      ]
     }
+  }
 }

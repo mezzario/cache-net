@@ -1,32 +1,32 @@
-import { Signal } from "signals"
+import {Signal} from "signals"
 
 export interface CacheOptions {
-    dependencies?: CacheDependency | CacheDependency[]
-    slidingExpirationMsec?: number
-    absoluteExpiration?: Date | ((options: CacheOptions) => Date)
-    removeCallback?: (key: string, value, reason: string) => any
+  dependencies?: CacheDependency | CacheDependency[]
+  slidingExpirationMsec?: number
+  absoluteExpiration?: Date | ((options: CacheOptions) => Date)
+  removeCallback?: (key: string, value, reason: string) => any
 }
 
-export declare class Cache {
-    maxSize: number
-    size: number
-    itemRemoved: Signal
+export default class Cache {
+  maxSize: number
+  size: number
+  itemRemoved: Signal
 
-    constructor(maxSize: number)
+  constructor(maxSize: number)
 
-    set(key, value, options?: CacheOptions): void
-    get(key)
-    has(key: any | any[]): boolean
-    remove(key: any | any[], reason?: string): void
-    clear(testFn?: (key, value) => boolean): number
-    enumerate(fn: (key, data) => boolean): void
+  set(key, value, options?: CacheOptions): void
+  get(key)
+  has(key: any | any[]): boolean
+  remove(key: any | any[], reason?: string): void
+  clear(testFn?: (key, value) => boolean): number
+  enumerate(fn: (key, data) => boolean): void
 }
 
-export declare class CacheDependency {
-    triggered: Signal
+export class CacheDependency {
+  triggered: Signal
 
-    constructor(keys: any | any[], dependencies: CacheDependency | CacheDependency[])
+  constructor(keys: any | any[], dependencies: CacheDependency | CacheDependency[])
 
-    isTriggered(): boolean
-    getLastModified(): Date
+  isTriggered(): boolean
+  getLastModified(): Date
 }
