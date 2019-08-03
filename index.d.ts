@@ -1,4 +1,4 @@
-import {Signal} from "signals"
+import {Signal} from 'signals'
 
 export interface CacheOptions {
   dependencies?: CacheDependency | CacheDependency[]

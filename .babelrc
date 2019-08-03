@@ -1,17 +1,20 @@
 {
   "presets": [
-    ["es2015", { "modules": false }]
+    ["@babel/preset-env", {"modules": false}]
   ],
   "plugins": [
-    "transform-class-properties"
+    "@babel/plugin-proposal-class-properties"
+  ],
+  "ignore": [
+    "src/parser.js"
   ],
   "env": {
     "commonjs": {
       "presets": [
-        ["es2015", { "modules": "commonjs" }]
+        ["@babel/preset-env", {"modules": "commonjs"}]
       ],
       "plugins": [
-        "transform-class-properties"
+        "@babel/plugin-proposal-class-properties"
       ]
     }
   }

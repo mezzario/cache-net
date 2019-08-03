@@ -1,2 +1,2 @@
-export {default} from "./Cache"
-export {default as CacheDependency} from "./CacheDependency"
+export {default} from './cache'
+export {default as CacheDependency} from './CacheDependency'

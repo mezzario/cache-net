@@ -1,7 +1,7 @@
-import * as RedBlackTree from "redblack"
-import {Signal} from "signals"
-import CacheDependency from "./CacheDependency"
-import * as Utils from "./Utils"
+import * as RedBlackTree from 'redblack'
+import {Signal} from 'signals'
+import CacheDependency from './CacheDependency'
+import * as Utils from './utils'
 
 export default class Cache {
   constructor(maxSize) {
@@ -19,14 +19,17 @@ export default class Cache {
   }
 
   set maxSize(maxSize) {
-    if (maxSize != null && maxSize <= 0)
+    if (maxSize != null && maxSize <= 0) {
       throw new Error("'maxSize' shoud be greater than 0")
+    }
 
     this._maxSize = maxSize
 
-    if (maxSize != null)
-      while (this._size > maxSize)
-        this._removeItem(this._getOldestItem(), "Underused")
+    if (maxSize != null) {
+      while (this._size > maxSize) {
+        this._removeItem(this._getOldestItem(), 'Underused')
+      }
+    }
   }
 
   get size() {
@@ -36,8 +39,9 @@ export default class Cache {
   set(key, value, options) {
     options = options || {}
 
-    if (value === void 0)
+    if (value === void 0) {
       throw new Error("'value' cannot be undefined")
+    }
 
     const deps = options.dependencies
       ? (Array.isArray(options.dependencies)
@@ -45,30 +49,36 @@ export default class Cache {
         : [options.dependencies])
       : []
 
-    for (let i = 0; i < deps.length; i++)
-      if (!(deps[i] instanceof CacheDependency))
+    for (let i = 0; i < deps.length; i++) {
+      if (!(deps[i] instanceof CacheDependency)) {
         throw new Error("'dependencies' should be one or more 'CacheDependency' instances")
+      }
+    }
 
-    const absoluteExpiration = typeof options.absoluteExpiration === "function"
+    const absoluteExpiration = typeof options.absoluteExpiration === 'function'
       ? options.absoluteExpiration.call(options)
       : options.absoluteExpiration
 
-    if (absoluteExpiration != null && !(absoluteExpiration instanceof Date))
+    if (absoluteExpiration != null && !(absoluteExpiration instanceof Date)) {
       throw new Error("'absoluteExpiration' is not a Date")
+    }
 
     if (options.slidingExpirationMsec != null) {
-      if (absoluteExpiration != null)
+      if (absoluteExpiration != null) {
         throw new Error("'slidingExpirationMsec' cannot be set if 'absoluteExpiration' is set")
+      }
 
-      if ((options.slidingExpirationMsec < 0 || options.slidingExpirationMsec > 31536000000))
+      if ((options.slidingExpirationMsec < 0 || options.slidingExpirationMsec > 31536000000)) {
         throw new Error("allowed range for 'slidingExpirationMsec' is [0..31536000000] (up to one year)")
+      }
     }
 
     const keyStruct = Utils.getKeyStruct(key)
     const prevItem = this._map[keyStruct.keyStr]
 
-    if (prevItem)
-      this._removeItem(prevItem, "Overwritten")
+    if (prevItem) {
+      this._removeItem(prevItem, 'Overwritten')
+    }
 
     const item = {
       order: this._lastOrder++,
@@ -83,20 +93,23 @@ export default class Cache {
 
     this._updateExpiration(item)
 
-    if (this._maxSize != null && this._maxSize === this.size)
-      this._removeItem(this._getOldestItem(), "Underused")
+    if (this._maxSize != null && this._maxSize === this.size) {
+      this._removeItem(this._getOldestItem(), 'Underused')
+    }
 
     this._map[item.keyStr] = item
     this._tree.insert(item.order, item)
 
-    if (!prevItem)
+    if (!prevItem) {
       this._size++
+    }
 
     const depTriggered = () => {
-      for (let i = 0; i < deps.length; i++)
+      for (let i = 0; i < deps.length; i++) {
         deps[i].triggered.remove(depTriggered)
+      }
 
-      this.remove(key, "DependencyTriggered")
+      this.remove(key, 'DependencyTriggered')
     }
 
     for (let i = 0; i < deps.length; i++) {
@@ -129,8 +142,9 @@ export default class Cache {
       const keyStruct = Utils.getKeyStruct(keys[i])
       const item = this._map[keyStruct.keyStr]
 
-      if (item)
+      if (item) {
         this._removeItem(item, reason)
+      }
     }
   }
 
@@ -153,25 +167,28 @@ export default class Cache {
     for (const keyStr in this._map) {
       const item = this._map[keyStr]
 
-      if (fn.call(this, item.key, item.value) === false)
+      if (fn.call(this, item.key, item.value) === false) {
         break
+      }
     }
   }
 
   _getOldestItem() {
     let node = this._tree.root
 
-    while (node.left !== null)
+    while (node.left !== null) {
       node = node.left
+    }
 
     return node.value
   }
 
   _removeItem(item, reason) {
-    reason = reason || "Removed"
+    reason = reason || 'Removed'
 
-    if (typeof item.removeCallback === "function")
+    if (typeof item.removeCallback === 'function') {
       item.removeCallback.apply(this, [item.key, item.value, reason])
+    }
 
     delete this._map[item.keyStr]
     this._tree.delete(item.order)
@@ -188,14 +205,15 @@ export default class Cache {
       item.expTimer = null
     }
 
-    if (item.absoluteExpiration != null)
+    if (item.absoluteExpiration != null) {
       expires = item.absoluteExpiration
-    else if (item.slidingExpirationMsec != null)
+    } else if (item.slidingExpirationMsec != null) {
       expires = new Date(new Date().getTime() + item.slidingExpirationMsec)
+    }
 
     if (expires) {
       const {keyStr} = item
-      item.expTimer = setTimeout(this.remove.bind(this, keyStr, "Expired"), expires.getTime() - new Date().getTime())
+      item.expTimer = setTimeout(this.remove.bind(this, keyStr, 'Expired'), expires.getTime() - new Date().getTime())
     }
   }
 }
